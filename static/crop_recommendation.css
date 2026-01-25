@@ -1,0 +1,142 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: rgb(216, 243, 202);
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 70%;
+    max-width: 600px;
+    margin: 80px auto;
+    background: white;
+    padding: 30px 40px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    position: relative;
+}
+
+h2 {
+    margin-bottom: 20px;
+    color: #2e7d32;
+    font-size: 28px;
+}
+
+input {
+    width: 85%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+button {
+    background: #28a745;
+    color: white;
+    padding: 12px 25px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: #218838;
+}
+
+#result {
+    margin-top: 25px;
+    font-size: 22px;
+    font-weight: bold;
+    color: #1b5e20;
+}
+
+#google_translate_element {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    padding: 16px;
+}
+
+.floating-label {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.floating-label input {
+    width: 93%;
+    padding: 16px 12px 8px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    background: none;
+}
+
+.floating-label label {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #666;
+    font-size: 16px;
+    pointer-events: none;
+    transition: 0.2s ease all;
+    background-color: white;
+    padding: 0 4px;
+
+}
+
+.floating-label input:focus {
+    border-color: #28a745;
+    outline: none;
+}
+
+.floating-label input:focus+label,
+.floating-label input:not(:placeholder-shown)+label {
+    top: -10px;
+    left: 10px;
+    font-size: 13px;
+    color: #28a745;
+}
+
+form#predictionForm {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px 25px;
+    /* less vertical gap */
+    align-items: center;
+    margin-top: 20px;
+}
+
+form#predictionForm .floating-label {
+    width: 100%;
+    margin-bottom: 0;
+    /* remove extra margin */
+}
+
+.floating-label input {
+    padding: 12px 12px 10px;
+    /* slightly reduced padding */
+}
+
+.floating-label label {
+    top: 20px;
+    /* better alignment */
+}
+
+form#predictionForm button {
+    grid-column: span 2;
+    margin-top: 12px;
+}
+
+@media screen and (max-width: 600px) {
+    form#predictionForm {
+        grid-template-columns: 1fr;
+    }
+
+    form#predictionForm button {
+        grid-column: span 1;
+    }
+}

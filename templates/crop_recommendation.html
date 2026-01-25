@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='crop_recommendation.css') }}">
+</head>
+
+<body>
+    <div id="google_translate_element"></div>
+
+    <div class="container">
+        <h2>Crop Recommendation System</h2>
+        <!-- <form id="predictionForm">
+            <input type="number" id="N" name="N" placeholder="Nitrogen (N)" required>
+            <input type="number" id="P" name="P" placeholder="Phosphorus (P)" required>
+            <input type="number" id="K" name="K" placeholder="Potassium (K)" required>
+            <input type="number" id="temperature" name="temperature" placeholder="Temperature (°C)" required>
+            <input type="number" id="humidity" name="humidity" placeholder="Humidity (%)" required>
+            <input type="number" id="ph" name="ph" placeholder="pH Level" required>
+            <input type="number" id="rainfall" name="rainfall" placeholder="Rainfall (mm)" required>
+            <button type="submit">Predict Crop</button>
+        </form> -->
+
+        <form id="predictionForm" novalidate>
+            <div class="floating-label">
+                <input type="number" id="N" name="N" placeholder=" " required />
+                <label for="N">Nitrogen (N)</label>
+            </div>
+
+            <div class="floating-label">
+                <input type="number" id="P" name="P" placeholder=" " required />
+                <label for="P">Phosphorus (P)</label>
+            </div>
+
+            <div class="floating-label">
+                <input type="number" id="K" name="K" placeholder=" " required />
+                <label for="K">Potassium (K)</label>
+            </div>
+
+            <div class="floating-label">
+                <input type="number" id="temperature" name="temperature" placeholder=" " required />
+                <label for="temperature">Temperature (°C)</label>
+            </div>
+
+            <div class="floating-label">
+                <input type="number" id="humidity" name="humidity" placeholder=" " required />
+                <label for="humidity">Humidity (%)</label>
+            </div>
+
+            <div class="floating-label">
+                <input type="number" id="ph" name="ph" placeholder=" " required />
+                <label for="ph">pH Level</label>
+            </div>
+
+            <div class="floating-label">
+                <input type="number" id="rainfall" name="rainfall" placeholder=" " required />
+                <label for="rainfall">Rainfall (mm)</label>
+            </div>
+
+            <button type="submit">Predict Crop</button>
+            <h3 id="result"></h3>
+            <h4 id="cropPrice"></h4>
+
+        </form>
+
+        <h3 id="result"></h3>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <!-- Google Translate Script -->
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,hi,ta,te,ml,bn,gu,pa,kn,mr,ur,as,or', // Add more as needed
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript"
+        src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <!-- WEATHER API -->
+    <script>
+    window.onload = function () {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(success, error);
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    };
+
+    function success(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        fetchWeather(lat, lon);
+    }
+
+    function error() {
+        alert("Unable to retrieve your location. Please allow location access.");
+    }
+
+    function fetchWeather(lat, lon) {
+        const apiKey = 'your api key';
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const temperature = data.main.temp;
+                const humidity = data.main.humidity;
+                const rainfall = data.rain ? (data.rain['1h'] || data.rain['3h'] || 0) : 0;
+
+                document.getElementById("temperature").value = temperature;
+                document.getElementById("humidity").value = humidity;
+                document.getElementById("rainfall").value = rainfall;
+            })
+            .catch(error => {
+                console.error("Error fetching weather data:", error);
+            });
+    }
+</script>
+
+<!-- PRICE PREDICTION -- API Ninjas -->
+<!-- <script>
+    const ninjaApiKey = "3qlF0KNEsR1vK+ox79mCgw==FSGULUO76otRwXOZ"; // replace with your real key
+
+   async function fetchCommodityPrice(cropName) {
+    try {
+        const response = await fetch('/get-price', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ crop: cropName })
+        });
+
+        const data = await response.json();
+
+        if (data.price) {
+            document.getElementById('cropPrice').textContent = `💰 Market Price of ${cropName}: ₹${data.price}`;
+        } else {
+            document.getElementById('cropPrice').textContent = "No price data available.";
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        document.getElementById('cropPrice').textContent = "Failed to fetch crop price.";
+    }
+}
+
+</script> -->
+
+</body>
+
+</html>
