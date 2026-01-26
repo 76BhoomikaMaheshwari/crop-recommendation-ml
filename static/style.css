@@ -138,6 +138,7 @@ section {
   display: grid;
   justify-content: center;
   gap: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 .feature-card {

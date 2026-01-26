@@ -54,6 +54,62 @@ button:hover {
     color: #1b5e20;
 }
 
+.message {
+    grid-column: span 2;
+    margin: 6px 0 4px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: left;
+    display: none;
+}
+
+.message.info {
+    display: block;
+    background: #e8f4ff;
+    color: #0b4d91;
+    border: 1px solid #b6d6ff;
+}
+
+.message.success {
+    display: block;
+    background: #e9f7ef;
+    color: #1b5e20;
+    border: 1px solid #b5e0c3;
+}
+
+.message.error {
+    display: block;
+    background: #fff1f0;
+    color: #a52714;
+    border: 1px solid #f5c6cb;
+}
+
+.crop-info {
+    margin-top: 12px;
+    text-align: left;
+}
+
+.info-card {
+    background: #f8fff4;
+    border: 1px solid #d6ebc8;
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.info-card h4 {
+    margin: 0 0 8px;
+    color: #2e7d32;
+}
+
+.info-card ul {
+    margin: 0;
+    padding-left: 18px;
+    color: #2f3c2f;
+    line-height: 1.5;
+}
+
 #google_translate_element {
     position: absolute;
     top: 15px;
