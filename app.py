@@ -37,6 +37,10 @@ crop_info = {
 
 @app.route('/')
 def home():
+    return render_template('landing.html')
+
+@app.route('/app')
+def app_page():
     return render_template('crop_recommendation.html')
 
 @app.route('/predict', methods=['POST'])
