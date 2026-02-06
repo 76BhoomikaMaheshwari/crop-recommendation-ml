@@ -4,6 +4,18 @@ const resultEl = document.getElementById("result");
 const messageEl = document.getElementById("message");
 const infoEl = document.getElementById("cropInfo");
 const resultsSection = document.getElementById("resultsSection");
+const submitButton = document.getElementById("submitButton");
+const confidenceEl = document.getElementById("confidence");
+const confidenceValueEl = document.getElementById("confidenceValue");
+const whyCropEl = document.getElementById("whyCrop");
+const themeToggle = document.getElementById("themeToggle");
+const confidenceFill = document.getElementById("confidenceFill");
+const sampleButton = document.getElementById("sampleButton");
+const tryAgainButton = document.getElementById("tryAgain");
+const soilSuitabilityEl = document.getElementById("soilSuitability");
+const climateSuitabilityEl = document.getElementById("climateSuitability");
+const soilSuitabilityLabel = document.getElementById("soilSuitabilityLabel");
+const climateSuitabilityLabel = document.getElementById("climateSuitabilityLabel");
 
 // Range input fields
 const rangeFields = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"];
@@ -45,6 +57,12 @@ function updateValueDisplay(field) {
     if (numberInput && valueDisplay) {
         valueDisplay.textContent = numberInput.value || "-";
     }
+
+    if (field === "N" || field === "P" || field === "K") {
+        updateNpkLevel(field);
+    }
+
+    updateWarnings(field);
 }
 
 function animateValueChange(element) {
@@ -70,8 +88,190 @@ function showMessage(text, type = "info") {
 function clearOutputs() {
     resultEl.textContent = "";
     infoEl.innerHTML = "";
+    if (whyCropEl) {
+        whyCropEl.innerHTML = "";
+    }
+    if (confidenceEl) {
+        confidenceEl.style.display = "none";
+    }
+    if (confidenceFill) {
+        confidenceFill.style.width = "0%";
+    }
+    if (soilSuitabilityEl) {
+        soilSuitabilityEl.style.width = "0%";
+    }
+    if (climateSuitabilityEl) {
+        climateSuitabilityEl.style.width = "0%";
+    }
+    if (soilSuitabilityLabel) {
+        soilSuitabilityLabel.textContent = "-";
+    }
+    if (climateSuitabilityLabel) {
+        climateSuitabilityLabel.textContent = "-";
+    }
     showMessage("", "info");
     resultsSection.style.display = "none";
+}
+
+function setLoadingState(isLoading) {
+    if (!submitButton) {
+        return;
+    }
+    submitButton.disabled = isLoading;
+    submitButton.classList.toggle("is-loading", isLoading);
+}
+
+function validateField(input) {
+    const label = input.dataset.label || input.name || "Field";
+    const value = input.value.trim();
+    const min = input.min === "" ? null : Number(input.min);
+    const max = input.max === "" ? null : Number(input.max);
+    let message = "";
+
+    if (value === "") {
+        message = `${label} is required.`;
+    } else if (Number.isNaN(Number(value))) {
+        message = `${label} must be a number.`;
+    } else if (min !== null && Number(value) < min) {
+        message = `${label} must be at least ${min}.`;
+    } else if (max !== null && Number(value) > max) {
+        message = `${label} must be at most ${max}.`;
+    }
+
+    const errorEl = document.getElementById(`${input.id}-error`);
+    if (message) {
+        input.classList.add("is-invalid");
+        if (errorEl) {
+            errorEl.textContent = message;
+        }
+        return false;
+    }
+
+    input.classList.remove("is-invalid");
+    if (errorEl) {
+        errorEl.textContent = "";
+    }
+    return true;
+}
+
+function updateNpkLevel(field) {
+    const input = document.getElementById(field);
+    const badge = document.getElementById(`${field}-level`);
+    if (!input || !badge || input.value.trim() === "") {
+        if (badge) {
+            badge.textContent = "-";
+            badge.className = "level-badge";
+        }
+        return;
+    }
+
+    const value = Number(input.value);
+    const max = Number(input.max || 100);
+    const ratio = max ? value / max : 0;
+    let label = "Medium";
+    let levelClass = "level-medium";
+
+    if (ratio < 0.33) {
+        label = "Low";
+        levelClass = "level-low";
+    } else if (ratio > 0.66) {
+        label = "High";
+        levelClass = "level-high";
+    }
+
+    badge.textContent = label;
+    badge.className = `level-badge ${levelClass}`;
+}
+
+function setWarning(id, message) {
+    const target = document.getElementById(id);
+    if (!target) {
+        return;
+    }
+    target.textContent = message;
+}
+
+function updateWarnings(field) {
+    const value = Number(document.getElementById(field)?.value || 0);
+    if (field === "temperature") {
+        setWarning("temperature-warning", value && (value < 10 || value > 40) ? "Unusual temperature range." : "");
+    }
+    if (field === "humidity") {
+        setWarning("humidity-warning", value && (value < 30 || value > 90) ? "Humidity looks uncommon." : "");
+    }
+    if (field === "rainfall") {
+        setWarning("rainfall-warning", value && (value < 50 || value > 250) ? "Rainfall is outside normal range." : "");
+    }
+    if (field === "ph") {
+        setWarning("ph-warning", value && (value < 5.5 || value > 8.5) ? "pH is outside ideal crop range." : "");
+    }
+}
+
+function updateSuitability(values) {
+    if (!soilSuitabilityEl || !climateSuitabilityEl) {
+        return;
+    }
+
+    const soilScore = getSoilSuitability(values);
+    const climateScore = getClimateSuitability(values);
+
+    soilSuitabilityEl.style.width = `${soilScore}%`;
+    climateSuitabilityEl.style.width = `${climateScore}%`;
+
+    if (soilSuitabilityLabel) {
+        soilSuitabilityLabel.textContent = `${soilScore}%`;
+    }
+    if (climateSuitabilityLabel) {
+        climateSuitabilityLabel.textContent = `${climateScore}%`;
+    }
+}
+
+function clampPercent(value) {
+    return Math.max(10, Math.min(100, Math.round(value)));
+}
+
+function getSoilSuitability(values) {
+    const n = Number(values.N || 0);
+    const p = Number(values.P || 0);
+    const k = Number(values.K || 0);
+    const ph = Number(values.ph || 0);
+    const nScore = 100 - Math.abs(n - 70) * 1.2;
+    const pScore = 100 - Math.abs(p - 70) * 1.2;
+    const kScore = 100 - Math.abs(k - 100) * 0.9;
+    const phScore = 100 - Math.abs(ph - 6.5) * 15;
+    return clampPercent((nScore + pScore + kScore + phScore) / 4);
+}
+
+function getClimateSuitability(values) {
+    const temp = Number(values.temperature || 0);
+    const humidity = Number(values.humidity || 0);
+    const rainfall = Number(values.rainfall || 0);
+    const tempScore = 100 - Math.abs(temp - 26) * 2.2;
+    const humidityScore = 100 - Math.abs(humidity - 70) * 1.2;
+    const rainScore = 100 - Math.abs(rainfall - 120) * 0.6;
+    return clampPercent((tempScore + humidityScore + rainScore) / 3);
+}
+
+function validateFormFields() {
+    const fields = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"];
+    let firstInvalid = null;
+
+    fields.forEach(field => {
+        const input = document.getElementById(field);
+        if (!input) {
+            return;
+        }
+        const isValid = validateField(input);
+        if (!isValid && !firstInvalid) {
+            firstInvalid = input;
+        }
+    });
+
+    if (firstInvalid) {
+        firstInvalid.focus();
+        return false;
+    }
+    return true;
 }
 
 // Crop emoji mapping
@@ -172,29 +372,16 @@ form.addEventListener("submit", function (event) {
 
     clearOutputs();
 
-    // Validate all fields
-    const fields = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"];
-    const formData = new FormData(form);
-
-    for (const field of fields) {
-        const raw = formData.get(field);
-        if (raw === null || raw.trim() === "") {
-            showMessage("⚠️ Please fill all fields before submitting.", "error");
-            return;
-        }
-        const value = Number(raw);
-        if (Number.isNaN(value)) {
-            showMessage(`❌ Invalid number for ${field}.`, "error");
-            return;
-        }
-        if (value < 0) {
-            showMessage(`❌ ${field} cannot be negative.`, "error");
-            return;
-        }
+    if (!validateFormFields()) {
+        showMessage("Please fix the highlighted fields before submitting.", "error");
+        return;
     }
 
+    const formData = new FormData(form);
+
     // Show loading state with animation
-    showMessage("🔄 Analyzing soil and climate data...", "info");
+    showMessage("Analyzing soil and climate data...", "info");
+    setLoadingState(true);
 
     // Submit form
     fetch("/predict", {
@@ -203,6 +390,7 @@ form.addEventListener("submit", function (event) {
     })
         .then(response => response.json())
         .then(data => {
+            setLoadingState(false);
             if (data.error) {
                 showMessage(`❌ ${data.error}`, "error");
                 return;
@@ -222,22 +410,67 @@ form.addEventListener("submit", function (event) {
                     <span style="font-size: 2rem; font-weight: 900; letter-spacing: 2px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                         ${crop.toUpperCase()}
                     </span>
+                    <div style="margin-top: 10px; font-size: 0.95rem; opacity: 0.9;">
+                        Best crop for your field
+                    </div>
                 </div>
             `;
 
             // Update result card color based on crop
             resultEl.parentElement.style.background = `linear-gradient(135deg, ${color}, ${adjustBrightness(color, 20)})`;
+            resultEl.classList.add("is-highlighted");
+            setTimeout(() => resultEl.classList.remove("is-highlighted"), 1200);
+
+            // Confidence display (if provided by backend)
+            if (confidenceEl && confidenceValueEl && typeof data.confidence === "number") {
+                confidenceEl.style.display = "block";
+                confidenceValueEl.textContent = `${(data.confidence * 100).toFixed(1)}%`;
+                if (confidenceFill) {
+                    confidenceFill.style.width = `${(data.confidence * 100).toFixed(1)}%`;
+                }
+            }
 
             // Display crop information
-            if (data.info && (data.info.season || data.info.water)) {
-                const season = data.info.season ? `<li><strong>📅 Ideal Season:</strong> ${data.info.season}</li>` : "";
-                const water = data.info.water ? `<li><strong>💧 Water Requirements:</strong> ${data.info.water}</li>` : "";
+            if (data.info && (data.info.season || data.info.water || data.info.soil)) {
+                const season = data.info.season ? `<li><strong>Ideal Season:</strong> ${data.info.season}</li>` : "";
+                const water = data.info.water ? `<li><strong>Water Needs:</strong> ${data.info.water}</li>` : "";
+                const soil = data.info.soil ? `<li><strong>Ideal Soil:</strong> ${data.info.soil}</li>` : "";
                 infoEl.innerHTML = `
                     <div class="info-card">
-                        <h4>🌾 Crop Growing Information</h4>
-                        <ul>${season}${water}</ul>
+                        <h4>Crop Info</h4>
+                        <ul>${soil}${season}${water}</ul>
                     </div>
                 `;
+            }
+
+            // Why this crop explanation
+            if (whyCropEl) {
+                const values = {
+                    N: formData.get("N"),
+                    P: formData.get("P"),
+                    K: formData.get("K"),
+                    temperature: formData.get("temperature"),
+                    humidity: formData.get("humidity"),
+                    rainfall: formData.get("rainfall"),
+                    ph: formData.get("ph")
+                };
+                const reasons = [];
+                reasons.push(`Nutrient balance: N ${values.N}, P ${values.P}, K ${values.K}.`);
+                reasons.push(`Climate fit: ${values.temperature}°C, ${values.humidity}% humidity, ${values.rainfall} mm rainfall.`);
+                if (data.info && data.info.season) {
+                    reasons.push(`Seasonal fit: ${data.info.season}.`);
+                }
+                if (data.info && data.info.water) {
+                    reasons.push(`Water guidance: ${data.info.water}.`);
+                }
+                whyCropEl.innerHTML = `
+                    <div class="why-card">
+                        <h4>Why this crop?</h4>
+                        <ul>${reasons.map(reason => `<li>${reason}</li>`).join("")}</ul>
+                    </div>
+                `;
+
+                updateSuitability(values);
             }
 
             // Display farming tips
@@ -252,7 +485,7 @@ form.addEventListener("submit", function (event) {
             // Add confetti effect
             createConfetti();
 
-            showMessage("✅ Prediction ready. Happy farming!", "success");
+            showMessage("Prediction ready. Happy farming!", "success");
 
             // Auto-hide success message after 4 seconds
             setTimeout(() => {
@@ -269,6 +502,7 @@ form.addEventListener("submit", function (event) {
         })
         .catch(error => {
             console.error("Error:", error);
+            setLoadingState(false);
             showMessage("❌ Prediction failed. Please try again.", "error");
         });
 });
@@ -286,7 +520,7 @@ form.addEventListener("reset", function () {
             }, 150);
         }
     });
-    showMessage("✨ Form cleared successfully!", "success");
+    showMessage("Form cleared successfully!", "success");
     setTimeout(() => showMessage("", "info"), 2500);
 });
 
@@ -342,6 +576,62 @@ document.querySelectorAll('.section-header').forEach((header, index) => {
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
     initializeRangeSliders();
+
+    const inputs = document.querySelectorAll("#predictionForm input[type='number']");
+    inputs.forEach(input => {
+        input.addEventListener("input", () => validateField(input));
+        input.addEventListener("blur", () => validateField(input));
+    });
+
+    if (sampleButton) {
+        sampleButton.addEventListener("click", () => {
+            const sample = {
+                N: 80,
+                P: 65,
+                K: 90,
+                temperature: 26.5,
+                humidity: 72,
+                rainfall: 140,
+                ph: 6.7
+            };
+            Object.keys(sample).forEach(key => {
+                const input = document.getElementById(key);
+                const range = document.getElementById(`${key}-range`);
+                if (input) {
+                    input.value = sample[key];
+                    validateField(input);
+                }
+                if (range) {
+                    range.value = sample[key];
+                }
+                updateValueDisplay(key);
+            });
+            showMessage("Sample values filled. Adjust as needed.", "info");
+        });
+    }
+
+    if (tryAgainButton) {
+        tryAgainButton.addEventListener("click", () => {
+            const formSection = document.querySelector(".form-section");
+            if (formSection) {
+                formSection.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+    }
+
+    if (themeToggle) {
+        const savedTheme = localStorage.getItem("agriTheme") || "light";
+        if (savedTheme === "dark") {
+            document.body.classList.add("theme-dark");
+            themeToggle.textContent = "Light mode";
+        }
+
+        themeToggle.addEventListener("click", () => {
+            const isDark = document.body.classList.toggle("theme-dark");
+            localStorage.setItem("agriTheme", isDark ? "dark" : "light");
+            themeToggle.textContent = isDark ? "Light mode" : "Dark mode";
+        });
+    }
     
     // Add scroll reveal animation to cards
     const observer = new IntersectionObserver((entries) => {
@@ -358,5 +648,15 @@ document.addEventListener("DOMContentLoaded", function () {
         card.style.transform = "translateY(20px)";
         card.style.transition = "all 0.3s ease";
         observer.observe(card);
+    });
+
+    document.querySelectorAll("a[href^='#']").forEach(anchor => {
+        anchor.addEventListener("click", event => {
+            const target = document.querySelector(anchor.getAttribute("href"));
+            if (target) {
+                event.preventDefault();
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
     });
 });

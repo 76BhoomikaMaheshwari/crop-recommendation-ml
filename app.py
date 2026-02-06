@@ -11,28 +11,28 @@ label_encoder = joblib.load("models/label_encoder.pkl")
 
 # Lightweight rule-based lookup for extra crop info shown after prediction.
 crop_info = {
-    "rice": {"season": "Kharif (monsoon)", "water": "High water requirement; ensure flooded fields"},
-    "maize": {"season": "Kharif/Rabi", "water": "Moderate; avoid waterlogging"},
-    "chickpea": {"season": "Rabi (cool, dry)", "water": "Low to moderate; well-drained soil"},
-    "kidneybeans": {"season": "Kharif", "water": "Moderate; consistent moisture"},
-    "pigeonpeas": {"season": "Kharif", "water": "Low; drought-tolerant"},
-    "mothbeans": {"season": "Kharif", "water": "Very low; thrives in arid zones"},
-    "mungbean": {"season": "Kharif", "water": "Moderate; avoid standing water"},
-    "blackgram": {"season": "Kharif", "water": "Moderate; keep soil moist"},
-    "lentil": {"season": "Rabi", "water": "Low to moderate; avoid heavy rains"},
-    "pomegranate": {"season": "Year-round (best Feb-Mar)", "water": "Moderate; good drainage"},
-    "banana": {"season": "Year-round", "water": "High; consistent irrigation"},
-    "mango": {"season": "Kharif planting", "water": "Moderate; avoid waterlogging"},
-    "grapes": {"season": "Rabi planting", "water": "Moderate; drip preferred"},
-    "watermelon": {"season": "Zaid (summer)", "water": "High during fruiting; good drainage"},
-    "muskmelon": {"season": "Zaid (summer)", "water": "Moderate; avoid excess"},
-    "apple": {"season": "Temperate Rabi", "water": "Moderate; steady moisture"},
-    "orange": {"season": "Year-round (best monsoon)", "water": "Moderate; regular irrigation"},
-    "papaya": {"season": "Year-round", "water": "High; consistent moisture"},
-    "coconut": {"season": "Kharif/Rabi", "water": "High; ample irrigation"},
-    "cotton": {"season": "Kharif", "water": "Moderate to high; avoid waterlogging"},
-    "jute": {"season": "Kharif", "water": "High; humid conditions"},
-    "coffee": {"season": "Rabi planting", "water": "High; shaded, regular irrigation"}
+    "rice": {"season": "Kharif (monsoon)", "water": "High water requirement; ensure flooded fields", "soil": "Clayey or loamy, high water retention"},
+    "maize": {"season": "Kharif/Rabi", "water": "Moderate; avoid waterlogging", "soil": "Well-drained loamy soil"},
+    "chickpea": {"season": "Rabi (cool, dry)", "water": "Low to moderate; well-drained soil", "soil": "Sandy loam to loam"},
+    "kidneybeans": {"season": "Kharif", "water": "Moderate; consistent moisture", "soil": "Loamy, rich organic matter"},
+    "pigeonpeas": {"season": "Kharif", "water": "Low; drought-tolerant", "soil": "Well-drained loam"},
+    "mothbeans": {"season": "Kharif", "water": "Very low; thrives in arid zones", "soil": "Sandy to sandy loam"},
+    "mungbean": {"season": "Kharif", "water": "Moderate; avoid standing water", "soil": "Loamy, well-drained"},
+    "blackgram": {"season": "Kharif", "water": "Moderate; keep soil moist", "soil": "Clay loam to loam"},
+    "lentil": {"season": "Rabi", "water": "Low to moderate; avoid heavy rains", "soil": "Sandy loam"},
+    "pomegranate": {"season": "Year-round (best Feb-Mar)", "water": "Moderate; good drainage", "soil": "Light loam, well-drained"},
+    "banana": {"season": "Year-round", "water": "High; consistent irrigation", "soil": "Deep, rich loamy soil"},
+    "mango": {"season": "Kharif planting", "water": "Moderate; avoid waterlogging", "soil": "Loamy, well-drained"},
+    "grapes": {"season": "Rabi planting", "water": "Moderate; drip preferred", "soil": "Sandy loam with good drainage"},
+    "watermelon": {"season": "Zaid (summer)", "water": "High during fruiting; good drainage", "soil": "Sandy loam"},
+    "muskmelon": {"season": "Zaid (summer)", "water": "Moderate; avoid excess", "soil": "Sandy loam"},
+    "apple": {"season": "Temperate Rabi", "water": "Moderate; steady moisture", "soil": "Loamy, well-drained"},
+    "orange": {"season": "Year-round (best monsoon)", "water": "Moderate; regular irrigation", "soil": "Loamy to clay loam"},
+    "papaya": {"season": "Year-round", "water": "High; consistent moisture", "soil": "Well-drained loam"},
+    "coconut": {"season": "Kharif/Rabi", "water": "High; ample irrigation", "soil": "Sandy to loamy"},
+    "cotton": {"season": "Kharif", "water": "Moderate to high; avoid waterlogging", "soil": "Black soil or loam"},
+    "jute": {"season": "Kharif", "water": "High; humid conditions", "soil": "Alluvial, silt loam"},
+    "coffee": {"season": "Rabi planting", "water": "High; shaded, regular irrigation", "soil": "Well-drained, rich humus"}
 }
 
 @app.route('/')
@@ -68,13 +68,22 @@ def predict():
         prediction_index = model.predict(data_scaled)[0]
         predicted_crop = label_encoder.inverse_transform([prediction_index])[0]
 
+        confidence = None
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(data_scaled)[0]
+            confidence = float(np.max(probs))
+
         # Attach friendly info when available
         info = crop_info.get(predicted_crop.lower(), {})
 
-        return jsonify({
+        response = {
             "crop": predicted_crop,
             "info": info
-        })
+        }
+        if confidence is not None:
+            response["confidence"] = confidence
+
+        return jsonify(response)
     
     except Exception as e:
         return jsonify({"error": str(e)})
