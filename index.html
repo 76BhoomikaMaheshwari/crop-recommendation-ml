@@ -219,6 +219,56 @@
     </div>
   </footer>
 
+  <button class="feedback-fab" id="feedbackButton" type="button">Give Feedback</button>
+
+  <div class="feedback-modal" id="feedbackModal" aria-hidden="true">
+    <div class="feedback-card" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+      <div class="feedback-header">
+        <h3 id="feedbackTitle">Feedback</h3>
+        <button class="feedback-close" id="feedbackClose" type="button" aria-label="Close feedback form">Close</button>
+      </div>
+      <form id="feedbackForm" class="feedback-form" novalidate>
+        <div class="form-field">
+          <label for="feedbackName">Name</label>
+          <input type="text" id="feedbackName" name="name" placeholder="Your name" required />
+        </div>
+        <div class="form-field">
+          <label for="feedbackEmail">Email</label>
+          <input type="email" id="feedbackEmail" name="email" placeholder="Your email" required />
+        </div>
+        <div class="form-field">
+          <label for="feedbackMessage">Message</label>
+          <textarea id="feedbackMessage" name="message" rows="5" placeholder="Share your feedback" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Feedback</button>
+        <p class="feedback-success" id="feedbackSuccess" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+
+  <button class="smartbot-fab" id="smartbotToggle" type="button" aria-label="Open SmartBot">
+    <svg class="smartbot-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v6A2.5 2.5 0 0 1 17.5 15H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 12.5z" fill="currentColor"/>
+    </svg>
+  </button>
+
+  <div class="smartbot-panel" id="smartbotPanel" aria-hidden="true">
+    <div class="smartbot-window" role="dialog" aria-modal="true" aria-labelledby="smartbotTitle">
+      <div class="smartbot-header">
+        <div>
+          <h3 id="smartbotTitle">SmartBot – AgriSmart AI Assistant</h3>
+          <p>Help, ML insights, and crop guidance in one place.</p>
+        </div>
+        <button class="smartbot-close" id="smartbotClose" type="button" aria-label="Close SmartBot">Close</button>
+      </div>
+      <div class="smartbot-messages" id="smartbotMessages" aria-live="polite"></div>
+      <form class="smartbot-input" id="smartbotForm" novalidate>
+        <input type="text" id="smartbotField" placeholder="Ask about crops, soil, or the system..." autocomplete="off" required />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="loginModal" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
       <div class="modal-header">
@@ -337,6 +387,173 @@
       const nextTheme = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
       setTheme(nextTheme);
     });
+
+    const feedbackButton = document.getElementById('feedbackButton');
+    const feedbackModal = document.getElementById('feedbackModal');
+    const feedbackClose = document.getElementById('feedbackClose');
+    const feedbackForm = document.getElementById('feedbackForm');
+    const feedbackSuccess = document.getElementById('feedbackSuccess');
+    let feedbackTimeout = null;
+
+    function openFeedback() {
+      feedbackModal.classList.add('is-open');
+      feedbackModal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('modal-open');
+    }
+
+    function closeFeedback() {
+      feedbackModal.classList.remove('is-open');
+      feedbackModal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('modal-open');
+    }
+
+    if (feedbackButton && feedbackModal) {
+      feedbackButton.addEventListener('click', openFeedback);
+    }
+
+    if (feedbackClose) {
+      feedbackClose.addEventListener('click', closeFeedback);
+    }
+
+    if (feedbackModal) {
+      feedbackModal.addEventListener('click', (event) => {
+        if (event.target === feedbackModal) {
+          closeFeedback();
+        }
+      });
+    }
+
+    if (feedbackForm && feedbackSuccess) {
+      feedbackForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (feedbackTimeout) {
+          clearTimeout(feedbackTimeout);
+        }
+        feedbackSuccess.textContent = 'Thank you for your valuable feedback!';
+        feedbackSuccess.classList.add('is-visible');
+        feedbackForm.reset();
+        feedbackTimeout = setTimeout(() => {
+          feedbackSuccess.classList.remove('is-visible');
+          closeFeedback();
+        }, 2500);
+      });
+    }
+
+    const smartbotToggle = document.getElementById('smartbotToggle');
+    const smartbotPanel = document.getElementById('smartbotPanel');
+    const smartbotClose = document.getElementById('smartbotClose');
+    const smartbotMessages = document.getElementById('smartbotMessages');
+    const smartbotForm = document.getElementById('smartbotForm');
+    const smartbotField = document.getElementById('smartbotField');
+
+    function openSmartbot() {
+      smartbotPanel.classList.add('is-open');
+      smartbotPanel.setAttribute('aria-hidden', 'false');
+      if (smartbotField) {
+        smartbotField.focus();
+      }
+    }
+
+    function closeSmartbot() {
+      smartbotPanel.classList.remove('is-open');
+      smartbotPanel.setAttribute('aria-hidden', 'true');
+    }
+
+    function addSmartbotMessage(text, type) {
+      if (!smartbotMessages) {
+        return;
+      }
+      const bubble = document.createElement('div');
+      bubble.className = `smartbot-bubble ${type}`;
+      bubble.textContent = text;
+      smartbotMessages.appendChild(bubble);
+      smartbotMessages.scrollTop = smartbotMessages.scrollHeight;
+    }
+
+    function getSmartbotReply(message) {
+      const text = message.toLowerCase();
+      const replies = [];
+
+      if (
+        text.includes('crop') ||
+        text.includes('best crop') ||
+        text.includes('which crop') ||
+        text.includes('suitable crop')
+      ) {
+        replies.push('Crop selection depends on soil nutrients, pH, rainfall, and temperature. AgriSmart helps match these factors with suitable crops.');
+      }
+
+      if (
+        text.includes('soil') ||
+        text.includes('soil range') ||
+        text.includes('nitrogen') ||
+        text.includes('phosphorus') ||
+        text.includes('potassium') ||
+        text.includes('npk') ||
+        text.includes('pH'.toLowerCase())
+      ) {
+        replies.push('Healthy soil needs balanced N, P, and K along with a stable pH. Soil testing helps keep nutrients in ideal ranges for strong crop growth.');
+      }
+
+      if (
+        text.includes('rainfall') ||
+        text.includes('temperature') ||
+        text.includes('humidity') ||
+        text.includes('climate')
+      ) {
+        replies.push('Climate factors like rainfall, temperature, and humidity influence crop suitability, growth rate, and water needs.');
+      }
+
+      if (
+        text.includes('prediction') ||
+        text.includes('model') ||
+        text.includes('machine learning')
+      ) {
+        replies.push('The system uses a trained machine learning model to analyze soil and climate parameters and recommend crops based on patterns in the data.');
+      }
+
+      if (text.includes('fertilizer') || text.includes('low nitrogen')) {
+        replies.push('Fertilizer plans should be based on soil tests. Balanced NPK works for general nutrition, while low nitrogen often needs urea or organic nitrogen sources.');
+      }
+
+      if (replies.length === 0) {
+        return 'I can help you with crop selection, soil nutrients, climate impact, or system guidance. Please ask related questions.';
+      }
+
+      return replies.join(' ');
+    }
+
+    if (smartbotToggle && smartbotPanel) {
+      smartbotToggle.addEventListener('click', openSmartbot);
+    }
+
+    if (smartbotClose) {
+      smartbotClose.addEventListener('click', closeSmartbot);
+    }
+
+    if (smartbotPanel) {
+      smartbotPanel.addEventListener('click', (event) => {
+        if (event.target === smartbotPanel) {
+          closeSmartbot();
+        }
+      });
+    }
+
+    if (smartbotForm && smartbotField) {
+      smartbotForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const value = smartbotField.value.trim();
+        if (!value) {
+          return;
+        }
+        addSmartbotMessage(value, 'user');
+        const reply = getSmartbotReply(value);
+        setTimeout(() => {
+          addSmartbotMessage(reply, 'bot');
+        }, 300);
+        smartbotField.value = '';
+      });
+    }
   </script>
 </body>
 
